@@ -1,0 +1,135 @@
+[
+    {
+        "id": "basic_10mbps",
+        "name": "Basic Plan",
+        "speed": "10 Mbps",
+        "price": 499,
+        "billingCycle": "monthly",
+        "validityDays": 30,
+        "description": "Great for basic browsing and social media.",
+        "features": [
+            "Unlimited data",
+            "24/7 support",
+            "1 device streaming",
+            "Free router setup"
+        ],
+        "isPromotional": false,
+        "discount": 0,
+        "available": true,
+        "image": "https://i.ibb.co.com/rhMMs3F/basic.jpg"
+    },
+    {
+        "id": "family_20mbps",
+        "name": "Family Plan",
+        "speed": "20 Mbps",
+        "price": 899,
+        "billingCycle": "monthly",
+        "validityDays": 30,
+        "description": "Perfect for family use with streaming and online classes.",
+        "features": [
+            "Unlimited data",
+            "Priority support",
+            "3 devices streaming",
+            "Free router setup"
+        ],
+        "isPromotional": true,
+        "discount": 10,
+        "available": true,
+        "image": "https://i.ibb.co.com/NnyfNc0z/family.jpg"
+    },
+    {
+        "id": "pro_50mbps",
+        "name": "Pro Plan",
+        "speed": "50 Mbps",
+        "price": 1499,
+        "billingCycle": "monthly",
+        "validityDays": 30,
+        "description": "Best for gamers, streamers, and work-from-home users.",
+        "features": [
+            "Unlimited data",
+            "Dedicated IP",
+            "5 devices streaming",
+            "24/7 priority support"
+        ],
+        "isPromotional": true,
+        "discount": 15,
+        "available": true,
+        "image": "https://i.ibb.co.com/pvN2pSXv/pro.jpg"
+    },
+    {
+        "id": "student_15mbps",
+        "name": "Student Plan",
+        "speed": "15 Mbps",
+        "price": 399,
+        "billingCycle": "monthly",
+        "validityDays": 30,
+        "description": "Affordable plan tailored for students.",
+        "features": [
+            "Unlimited data",
+            "Limited-time price",
+            "2 devices allowed",
+            "Night boost speed"
+        ],
+        "isPromotional": true,
+        "discount": 20,
+        "available": true,
+        "image": "https://i.ibb.co.com/KcsH8cS3/student.jpg"
+    },
+    {
+        "id": "business_200mbps",
+        "name": "Business Plan",
+        "speed": "200 Mbps",
+        "price": 4999,
+        "billingCycle": "monthly",
+        "validityDays": 30,
+        "description": "High-speed plan for small to medium businesses.",
+        "features": [
+            "Unlimited data",
+            "Dedicated support",
+            "20 devices streaming",
+            "Free business router"
+        ],
+        "isPromotional": false,
+        "discount": 0,
+        "available": true,
+        "image": "https://i.ibb.co.com/HT5tY7hb/business.jpg"
+    },
+    {
+        "id": "gaming_1gbps",
+        "name": "Gaming Plan",
+        "speed": "1 Gbps",
+        "price": 9999,
+        "billingCycle": "monthly",
+        "validityDays": 30,
+        "description": "Lightning-fast plan for gamers and heavy users.",
+        "features": [
+            "Unlimited data",
+            "Low latency",
+            "10 devices streaming",
+            "Free gaming router"
+        ],
+        "isPromotional": false,
+        "discount": 0,
+        "available": true,
+        "image": "https://i.ibb.co.com/YFGMdyNP/gaming.jpg"
+    },
+    {
+        "id": "premium_100mbps",
+        "name": "Premium Plan",
+        "speed": "100 Mbps",
+        "price": 2499,
+        "billingCycle": "monthly",
+        "validityDays": 30,
+        "description": "Ultra-fast plan for heavy users and businesses.",
+        "features": [
+            "Unlimited data",
+            "Business-grade support",
+            "10 devices streaming",
+            "Free premium router"
+        ],
+        "isPromotional": false,
+        "discount": 0,
+        "available": true,
+        "image": "https://i.ibb.co.com/bM55DNzG/premium.jpg"
+    }
+]

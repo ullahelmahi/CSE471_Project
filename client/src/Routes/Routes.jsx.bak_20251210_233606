@@ -1,0 +1,47 @@
+import { createBrowserRouter } from "react-router-dom";
+
+// Layout
+import MainOutlet from "../Layout/Mainoutlet";
+
+// Pages (original)
+import Home from "../Pages/Home/Home/Home";
+import AboutUs from "../Pages/AboutUs/AboutUs";
+import Notice from "../Pages/Notice/Notice";
+import Ftp from "../Pages/FTP/Ftp";
+import Support from "../Pages/Support/Support";
+import Service from "../Pages/Home/Service/Service";
+import Packages from "../Pages/Home/Packages/Packages";
+import Reviews from "../Pages/Home/Reviews/Reviews";
+
+// Auth pages
+import LogIn from "../Pages/Registration/LogIn/LogIn";
+import SignUp from "../Pages/Registration/SignUp/SignUp";
+
+// Dashboard (placeholder)
+import AdminDashboard from "../Pages/Admin/AdminDashboard/AdminDashboard";
+
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <MainOutlet />,
+    children: [
+      { path: "/", element: <Home /> },
+      { path: "/about", element: <AboutUs /> },
+      { path: "/notice", element: <Notice /> },
+      { path: "/ftp", element: <Ftp /> },
+      { path: "/support", element: <Support /> },
+      { path: "/service", element: <Service /> },
+
+      // 🔥 FIXED ROUTES
+      { path: "/packages", element: <Packages /> },
+      { path: "/reviews", element: <Reviews /> },
+
+      // Auth
+      { path: "/login", element: <LogIn /> },
+      { path: "/register", element: <SignUp /> },
+
+      // Dashboard
+      { path: "/dashboard", element: <AdminDashboard /> },
+    ],
+  },
+]);

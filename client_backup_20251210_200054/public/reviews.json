@@ -1,0 +1,77 @@
+[
+    {
+        "_id": {
+            "$oid": "661bf5f5d83f0d9a6c001001"
+        },
+        "userId": "u1001",
+        "userName": "Tanvir Hasan",
+        "email": "tanvir@example.com",
+        "planId": "family_20mbps",
+        "rating": 4.5,
+        "tags": [
+            "fast speed",
+            "good support",
+            "reliable"
+        ],
+        "comment": "Great service so far. Internet speed is consistent and the support team is quick to respond.",
+        "createdAt": {
+            "$date": "2025-04-10T14:30:00Z"
+        }
+    },
+    {
+        "_id": {
+            "$oid": "661bf5f5d83f0d9a6c001002"
+        },
+        "userId": "u1002",
+        "userName": "Nusrat Jahan",
+        "email": "nusrat@example.com",
+        "planId": "pro_50mbps",
+        "rating": 5,
+        "tags": [
+            "excellent",
+            "value for money",
+            "gaming friendly"
+        ],
+        "comment": "No buffering, no issues! A dream for any gamer. Very happy with the Pro plan.",
+        "createdAt": {
+            "$date": "2025-04-12T09:15:00Z"
+        }
+    },
+    {
+        "_id": {
+            "$oid": "661bf5f5d83f0d9a6c001003"
+        },
+        "userId": "u1003",
+        "userName": "Rahim Uddin",
+        "email": "rahim@example.com",
+        "planId": "student_15mbps",
+        "rating": 3.8,
+        "tags": [
+            "affordable",
+            "decent speed",
+            "night boost"
+        ],
+        "comment": "Works well most of the time. Speed drops occasionally in the evening though.",
+        "createdAt": {
+            "$date": "2025-04-13T17:00:00Z"
+        }
+    },
+    {
+        "_id": {
+            "$oid": "661bf5f5d83f0d9a6c001004"
+        },
+        "userId": "u1004",
+        "userName": "Farzana Akter",
+        "email": "farzana@example.com",
+        "planId": "basic_10mbps",
+        "rating": 4.2,
+        "tags": [
+            "easy setup",
+            "friendly service"
+        ],
+        "comment": "Setup was quick and the support staff were polite. Good for general use.",
+        "createdAt": {
+            "$date": "2025-04-11T11:45:00Z"
+        }
+    }
+]

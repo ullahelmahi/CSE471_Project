@@ -1,21 +1,21 @@
 {
-  "name": "cse471-project-server",
-  "version": "0.1.0",
-  "private": true,
+  "name": "citynet-old-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
   "dependencies": {
-    "express": "^4.22.1"
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^6.3.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
-  },
-  "description": "",
-  "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+    "nodemon": "^3.0.1"
+  }
 }
