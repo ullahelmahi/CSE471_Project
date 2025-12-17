@@ -1,4 +1,14 @@
+# backups
+client_backup_*/
+*.bak
+*.bak_*
+*.log
+
+# node
 node_modules/
+
+# env
+.envnode_modules/
 dist/
 build/
 .env
