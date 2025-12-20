@@ -21,12 +21,12 @@ import UserDashboard from "../Pages/Dashboard/UserDashboard";
 import PaymentPage from "../Pages/PaymentPage";
 
 /* ADMIN */
-import AdminDashboard from "../admin/AdminDashboard/AdminDashboard";
-import AdminSupportManager from "../admin/AdminSupportManager/AdminSupportManager";
-import ManageUsers from "../admin/ManageUsers/ManageUsers";
-import ManagePackages from "../admin/ManagePackages";
-import AdminPayments from "../admin/AdminPayments/AdminPayments";
-import AdminAssignTechnician from "../admin/AdminAssignTechnician/AdminAssignTechnician";
+import AdminDashboard from "../Admin/AdminDashboard/AdminDashboard";
+import AdminSupportManager from "../Admin/AdminSupportManager/AdminSupportManager";
+import ManageUsers from "../Admin/ManageUsers/ManageUsers";
+import ManagePackages from "../Admin/ManagePackages";
+import AdminPayments from "../Admin/AdminPayments/AdminPayments";
+import AdminAssignTechnician from "../Admin/AdminAssignTechnician/AdminAssignTechnician";
 
 export const router = createBrowserRouter([
   {
