@@ -9,80 +9,87 @@ const UserDashboard = () => {
   const { user, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  /* ======================
+     STATE
+  ====================== */
   const [subscriptions, setSubscriptions] = useState([]);
-  const [supportRequests, setSupportRequests] = useState([]);
   const [packages, setPackages] = useState([]);
-  const [showPlan, setShowPlan] = useState(false);
+  const [supportRequests, setSupportRequests] = useState([]);
+  const [technician, setTechnician] = useState(null);
+
+  const [hasReviewed, setHasReviewed] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ===============================
-  // AUTH GUARD
-  // ===============================
+  // 🔽 HIDE / SHOW STATES
+  const [showSubscription, setShowSubscription] = useState(true);
+  const [showTechnician, setShowTechnician] = useState(true);
+  const [showSupport, setShowSupport] = useState(true);
+  const [showPlan, setShowPlan] = useState(false);
+
+  /* ======================
+     AUTH GUARD
+  ====================== */
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/login");
     }
   }, [authLoading, user, navigate]);
 
-  // ===============================
-  // LOAD DASHBOARD DATA
-  // ===============================
+  /* ======================
+     LOAD DASHBOARD DATA
+  ====================== */
   useEffect(() => {
     if (!user?._id) return;
 
-    const loadDashboard = async () => {
+    const loadData = async () => {
       try {
-        const [subsRes, supportRes, packagesRes] = await Promise.all([
-          API.get(`/subscriptions/${String(user._id)}`),
-          API.get(`/support-requests/user/${String(user._id)}`),
-          API.get(`/packages`)
-        ]);
+        const [subsRes, pkgRes, supportRes, reviewRes, techRes] =
+          await Promise.all([
+            API.get(`/subscriptions/${user._id}`),
+            API.get("/packages"),
+            API.get(`/support-requests/user/${user._id}`),
+            API.get("/reviews"),
+            API.get(`/my-technician/${user._id}`).catch(() => null),
+          ]);
 
-        setSubscriptions(Array.isArray(subsRes.data) ? subsRes.data : []);
-        setSupportRequests(Array.isArray(supportRes.data) ? supportRes.data : []);
-        setPackages(Array.isArray(packagesRes.data) ? packagesRes.data : []);
+        setSubscriptions(subsRes.data || []);
+        setPackages(pkgRes.data || []);
+        setSupportRequests(supportRes.data || []);
+        setTechnician(techRes?.data || null);
+
+        const active = subsRes.data.find((s) => s.status === "active");
+        const reviewed = reviewRes.data.some(
+          (r) => r.userId === user._id && r.planId === active?.planId
+        );
+        setHasReviewed(reviewed);
       } catch (err) {
-        console.error("Dashboard load failed:", err);
+        console.error("Dashboard load failed", err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadDashboard();
+    loadData();
   }, [user]);
 
-  // ===============================
-  // LOADING STATES
-  // ===============================
   if (authLoading || loading) {
     return <div className="p-10 text-center">Loading dashboard…</div>;
   }
 
-  if (!user) {
-    return <div className="p-10 text-center">Redirecting…</div>;
-  }
-
-  // ===============================
-  // ACTIVE SUBSCRIPTION
-  // ===============================
-    const activePlan = subscriptions
-    .filter(s => s.status === "active")
+  /* ======================
+     ACTIVE PLAN
+  ====================== */
+  const activePlan = subscriptions
+    .filter((s) => s.status === "active")
     .sort(
-        (a, b) =>
+      (a, b) =>
         new Date(b.subscriptionDate) - new Date(a.subscriptionDate)
     )[0];
-  // Match subscription → real package from DB
+
   const planDetails = activePlan
-    ? packages.find(
-        p =>
-          String(p._id) === String(activePlan.planId) ||
-          String(p.planId) === String(activePlan.planId)
-      )
+    ? packages.find((p) => p.planId === activePlan.planId)
     : null;
 
-  // ===============================
-  // REAL VALIDITY CALCULATION
-  // ===============================
   const daysLeft =
     activePlan && planDetails
       ? Math.max(
@@ -98,141 +105,236 @@ const UserDashboard = () => {
         )
       : 0;
 
-  // ===============================
-  // REVIEW HANDLER
-  // ===============================
+  /* ======================
+     REVIEW
+  ====================== */
   const handleReview = async () => {
-    const { value: form } = await Swal.fire({
-      title: "Leave a Review",
+    const { value } = await Swal.fire({
+      title: "✨ Share Your Experience",
+      background: "#111827",
+      color: "#ffffff",
       html: `
-        <textarea id="reviewText" class="swal2-textarea" placeholder="Write your review"></textarea>
-        <select id="rating" class="swal2-select">
-          <option value="">Rating</option>
-          <option value="5">★★★★★</option>
-          <option value="4">★★★★</option>
-          <option value="3">★★★</option>
-          <option value="2">★★</option>
-          <option value="1">★</option>
-        </select>
+        <textarea
+          id="reviewText"
+          placeholder="Write your experience..."
+          style="width:100%;min-height:120px;padding:12px;border:2px solid #a855f7;background:#f3f4f6;color:#000"
+        ></textarea>
       `,
-      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Submit Review",
       preConfirm: () => {
-        const review = document.getElementById("reviewText").value;
-        const rating = document.getElementById("rating").value;
-        if (!review || !rating) {
-          Swal.showValidationMessage("Both review and rating are required");
+        const message =
+          document.getElementById("reviewText").value.trim();
+        if (!message) {
+          Swal.showValidationMessage("Review required");
         }
-        return { review, rating };
+        return message;
       },
-      showCancelButton: true
     });
 
-    if (!form) return;
+    if (!value) return;
 
     try {
       await API.post("/reviews", {
-        userId: user._id,
-        name: user.name,
-        message: form.review,
-        rating: Number(form.rating),
-        createdAt: new Date()
+        planId: activePlan.planId,
+        planName: activePlan.planName,
+        rating: 5,
+        message: value,
+        anonymous: true,
       });
 
-      Swal.fire("Thank you!", "Your review was submitted.", "success");
+      Swal.fire("Thank you!", "Review submitted", "success");
+      setHasReviewed(true);
     } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to submit review.", "error");
+      Swal.fire("Error", "Failed to submit review", "error");
     }
   };
 
-  // ===============================
-  // UI
-  // ===============================
   return (
     <section className="max-w-6xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold">My Dashboard</h1>
 
-      {/* ================= SUBSCRIPTION ================= */}
+      {/* ======================
+         SUBSCRIPTION
+      ====================== */}
       <div className="card bg-base-200 shadow">
         <div className="card-body">
-          <h2 className="card-title">Current Subscription</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="card-title">Current Subscription</h2>
+            <button
+              className="btn btn-xs btn-outline"
+              onClick={() =>
+                setShowSubscription(!showSubscription)
+              }
+            >
+              {showSubscription ? "Hide" : "Show"}
+            </button>
+          </div>
 
-          {activePlan && planDetails ? (
+          {showSubscription && (
             <>
-              <p><strong>Plan:</strong> {planDetails.name}</p>
-              <p><strong>Price:</strong> ৳{planDetails.price}</p>
+              {activePlan && planDetails ? (
+                <>
+                  <p>
+                    <strong>Plan:</strong> {planDetails.name}
+                  </p>
+                  <p>
+                    <strong>Price:</strong> ৳{planDetails.price}
+                  </p>
+                  <p>
+                    <strong>Days Left:</strong> {daysLeft}
+                  </p>
 
-              <p>
-                <strong>Status:</strong>{" "}
-                <span className="badge badge-success">Active</span>
-              </p>
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      className="btn btn-sm btn-outline"
+                      onClick={() => setShowPlan(!showPlan)}
+                    >
+                      {showPlan ? "Hide Plan" : "View Plan"}
+                    </button>
 
-              <p>
-                <strong>Days Left:</strong>{" "}
-                <span className="badge badge-info">{daysLeft} days</span>
-              </p>
+                    {!hasReviewed && (
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={handleReview}
+                      >
+                        Leave Review
+                      </button>
+                    )}
+                    {hasReviewed && (
+                      <span className="badge badge-success">
+                        Review Submitted
+                      </span>
+                    )}
+                  </div>
 
-              <div className="flex gap-3 mt-4">
-                <button
-                  className="btn btn-sm btn-outline"
-                  onClick={() => setShowPlan(!showPlan)}
-                >
-                  {showPlan ? "Hide Plan Details" : "View Plan Details"}
-                </button>
-
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={handleReview}
-                >
-                  Leave Review
-                </button>
-              </div>
-
-              {showPlan && (
-                <div className="mt-6">
-                  <EachPackage item={planDetails} onSelect={() => {}} />
-                </div>
+                  {showPlan && (
+                    <div className="mt-6">
+                      <EachPackage
+                        item={planDetails}
+                        onSelect={() => {}}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-warning">
+                  No active subscription
+                </p>
               )}
             </>
-          ) : (
-            <p className="text-warning">No active subscription found.</p>
           )}
         </div>
       </div>
 
-      {/* ================= SUPPORT REQUESTS ================= */}
+      {/* ======================
+        TECHNICIAN
+      ====================== */}
       <div className="card bg-base-200 shadow">
         <div className="card-body">
-          <h2 className="card-title">Support Requests</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="card-title">👨‍🔧 Technician Assigned</h2>
+            <button
+              className="btn btn-xs btn-outline"
+              onClick={() => setShowTechnician(!showTechnician)}
+            >
+              {showTechnician ? "Hide" : "Show"}
+            </button>
+          </div>
 
-          {supportRequests.length === 0 ? (
-            <p>No support requests submitted.</p>
-          ) : (
-            <div className="space-y-4">
-              {supportRequests.map(req => (
-                <div
-                  key={req._id}
-                  className="border rounded p-4 bg-base-100"
-                >
-                  <p><strong>Type:</strong> {req.type}</p>
-                  <p><strong>Message:</strong> {req.supportMessage}</p>
+          {showTechnician && (
+            <>
+              {technician ? (
+                <>
+                  <p>
+                    <strong>Task:</strong>{" "}
+                    {technician.taskType === "installation"
+                      ? "Internet Installation"
+                      : "Service Support"}
+                  </p>
 
                   <p>
                     <strong>Status:</strong>{" "}
-                    <span className="badge badge-outline">
-                      {req.status}
+                    <span className="badge badge-warning ml-2">
+                      {technician.status}
                     </span>
                   </p>
 
-                  {req.adminComments && (
-                    <div className="mt-3 p-3 bg-green-100 border-l-4 border-green-600 text-gray-900 rounded">
-                      <strong className="block mb-1">Admin Reply:</strong>
-                      <p className="text-sm">{req.adminComments}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  <div className="mt-3 p-3 bg-base-100 rounded">
+                    <p className="font-semibold mb-1">
+                      Technician Details
+                    </p>
+                    <p>
+                      <strong>Name:</strong>{" "}
+                      {technician.technician?.name}
+                    </p>
+                    <p>
+                      <strong>Phone:</strong>{" "}
+                      {technician.technician?.phone}
+                    </p>
+                    <p>
+                      <strong>Area:</strong>{" "}
+                      {technician.technician?.area}
+                    </p>
+                  </div>
+
+                  <p className="text-sm text-gray-400 mt-3">
+                    The technician will contact you before visiting.
+                  </p>
+                </>
+              ) : (
+                <p className="text-gray-400">
+                  No technician assigned yet.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ======================
+         SUPPORT
+      ====================== */}
+      <div className="card bg-base-200 shadow">
+        <div className="card-body">
+          <div className="flex justify-between items-center">
+            <h2 className="card-title">Support Requests</h2>
+            <button
+              className="btn btn-xs btn-outline"
+              onClick={() => setShowSupport(!showSupport)}
+            >
+              {showSupport ? "Hide" : "Show"}
+            </button>
+          </div>
+
+          {showSupport && (
+            <>
+              {supportRequests.length === 0 ? (
+                <p>No support requests.</p>
+              ) : (
+                supportRequests.map((req) => (
+                  <div
+                    key={req._id}
+                    className="p-3 border rounded bg-base-100 mt-2"
+                  >
+                    <p>
+                      <strong>Type:</strong> {req.type}
+                    </p>
+                    <p>
+                      <strong>Status:</strong> {req.status}
+                    </p>
+                    <p>{req.supportMessage}</p>
+
+                    {req.adminComments && (
+                      <div className="mt-2 bg-green-100 p-2 rounded text-gray-900">
+                        <strong>Admin:</strong>{" "}
+                        {req.adminComments}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </>
           )}
         </div>
       </div>

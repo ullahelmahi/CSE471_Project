@@ -1,42 +1,89 @@
-import React from 'react';
-import { createBrowserRouter } from 'react-router-dom';
-import MainOutlet from "../Layout/Mainoutlet";
+import { createBrowserRouter } from "react-router-dom";
+import MainOutlet from "../Layout/MainOutlet";
+import PrivateRoutes from "./PrivateRoutes";
+import AdminRoute from "./AdminRoute";
+
+/* PUBLIC PAGES */
 import Home from "../Pages/Home/Home/Home";
 import AboutUs from "../Pages/AboutUs/AboutUs";
+import Packages from "../Pages/Home/Packages/Packages";
+import Reviews from "../Pages/Home/Reviews/Reviews";
+import Ftp from "../Pages/FTP/Ftp";
 import Notice from "../Pages/Notice/Notice";
 import Support from "../Pages/Support/Support";
 
-// Auth pages
+/* AUTH */
 import LogIn from "../Pages/Registration/LogIn/LogIn";
 import SignUp from "../Pages/Registration/SignUp/SignUp";
 
-// Module-3 flag
-const ENABLE_MODULE3 = (import.meta.env.VITE_ENABLE_MODULE3 === 'true');
+/* USER */
+import UserDashboard from "../Pages/Dashboard/UserDashboard";
+import PaymentPage from "../Pages/PaymentPage";
 
-let children = [
-  { path: "/", element: <Home /> },
-  { path: "/about", element: <AboutUs /> },
-  { path: "/notice", element: <Notice /> },
-  { path: "/support", element: <Support /> },
-
-  // AUTH
-  { path: "/login", element: <LogIn /> },
-  { path: "/signup", element: <SignUp /> },
-];
-
-// 🔥 SERVICES REMOVED
-// 🔥 FTP REMOVED
-// You still have the files, but users cannot visit them.
-
-// Add Module 3 pages only if enabled
-if (ENABLE_MODULE3) {
-  // Add module-3 routes here if needed
-}
+/* ADMIN */
+import AdminDashboard from "../admin/AdminDashboard/AdminDashboard";
+import AdminSupportManager from "../admin/AdminSupportManager/AdminSupportManager";
+import ManageUsers from "../admin/ManageUsers/ManageUsers";
+import ManagePackages from "../admin/ManagePackages";
+import AdminPayments from "../admin/AdminPayments/AdminPayments";
+import AdminAssignTechnician from "../admin/AdminAssignTechnician/AdminAssignTechnician";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <MainOutlet />,
-    children
-  }
+    errorElement: (
+      <div className="p-10 text-center text-red-500">
+        <h1 className="text-2xl font-bold">Something went wrong</h1>
+        <p>Route failed to render.</p>
+      </div>
+    ),
+    children: [
+      { index: true, element: <Home /> },
+      { path: "about", element: <AboutUs /> },
+      { path: "packages", element: <Packages /> },
+      { path: "reviews", element: <Reviews /> },
+      { path: "ftp", element: <Ftp /> },
+      { path: "notice", element: <Notice /> },
+      { path: "support", element: <Support /> },
+
+      { path: "login", element: <LogIn /> },
+      { path: "register", element: <SignUp /> },
+
+      {
+        path: "dashboard",
+        element: (
+          <PrivateRoutes>
+            <UserDashboard />
+          </PrivateRoutes>
+        ),
+      },
+
+      {
+        path: "payment",
+        element: (
+          <PrivateRoutes>
+            <PaymentPage />
+          </PrivateRoutes>
+        ),
+      },
+
+      {
+        path: "admin",
+        element: (
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        ),
+        children: [
+          { index: true, element: <ManageUsers /> },
+          { path: "manage-users", element: <ManageUsers /> },
+          { path: "manage-packages", element: <ManagePackages /> },
+          { path: "support-status", element: <AdminSupportManager /> },
+          { path: "payments", element: <AdminPayments /> },
+          { path: "assign-technician", element: <AdminAssignTechnician /> },
+        ],
+      },
+    ],
+  },
 ]);

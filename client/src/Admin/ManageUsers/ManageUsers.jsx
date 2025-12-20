@@ -1,97 +1,269 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import Swal from "sweetalert2";
 
 const ManageUsers = () => {
-    const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [showUsers, setShowUsers] = useState(true);
+  const [showAdmins, setShowAdmins] = useState(true);
 
-    const fetchUsers = async () => {
-        try {
-            const res = await axios.get("http://localhost:5000/admin/users");
-            setUsers(res.data);
-        } catch (err) {
-            toast.error("Failed to load users");
+  /* =========================
+     FETCH USERS (ADMIN)
+  ========================= */
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get(
+        "http://localhost:5000/admin/users",
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
-    };
+      );
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+      setUsers(res.data || []);
+    } catch {
+      toast.error("Failed to load users");
+    }
+  };
 
-    const handleRoleChange = async (email, newRole) => {
-        try {
-            await axios.patch(`http://localhost:5000/admin/users/role/${email}`, { role: newRole });
-            toast.success("Role updated");
-            fetchUsers();
-        } catch {
-            toast.error("Role update failed");
-        }
-    };
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-    const handleDelete = async (email) => {
-        if (!confirm("Are you sure you want to delete this user?")) return;
-        try {
-            await axios.delete(`http://localhost:5000/admin/users/${email}`);
-            toast.success("User deleted");
-            fetchUsers();
-        } catch {
-            toast.error("Deletion failed");
-        }
-    };
+  /* =========================
+     ROLE CHANGE
+  ========================= */
+  const handleRoleChange = async (email, role) => {
+    try {
+      const token = localStorage.getItem("token");
 
-    return (
-        <section className="p-6 max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4 text-primary">👥 Manage Users</h2>
-            <div className="overflow-x-auto">
-                <table className="table w-full bg-base-100">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>userId</th>
-                            <th>phone</th>
-                            <th>Provider</th>
-                            <th>Created</th>
-                            <th>Address</th>
-                            <th>Role</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map((user, idx) => (
-                            <tr key={user.email}>
-                                <td>{idx + 1}</td>
-                                <td>{user.name || "N/A"}</td>
-                                <td>{user.email}</td>
-                                <td>{user.userId}</td>
-                                <td>{user.phone || "N/A"}</td>
-                                <td>{user.authProvider}</td>
-                                <td>{user.address || "N/A"}</td>
-                                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-                                <td>
-                                    <select
-                                        className="select select-bordered select-sm"
-                                        value={user.role}
-                                        onChange={(e) => handleRoleChange(user.email, e.target.value)}
-                                    >
-                                        <option value="customer">Customer</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="manager">Manager</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <button onClick={() => handleDelete(user.email)} className="btn btn-error btn-sm">
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    );
+      await axios.patch(
+        `http://localhost:5000/admin/users/role/${email}`,
+        { role },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("Role updated");
+      fetchUsers();
+    } catch {
+      toast.error("Role update failed");
+    }
+  };
+
+  /* =========================
+     STATUS CHANGE
+  ========================= */
+  const handleStatusChange = async (subscriptionId, status) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.patch(
+        `http://localhost:5000/admin/subscription/${subscriptionId}/status`,
+        { status },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("Plan status updated");
+      fetchUsers();
+    } catch {
+      toast.error("Failed to update status");
+    }
+  };
+
+  /* =========================
+     DELETE USER (SAFE)
+  ========================= */
+  const handleDeleteUser = async (userId) => {
+    const confirm = await Swal.fire({
+      title: "Delete user?",
+      text: "This action cannot be undone",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.delete(
+        `http://localhost:5000/admin/users/${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success("User deleted");
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Delete failed");
+    }
+  };
+
+  /* =========================
+     SPLIT USERS
+  ========================= */
+  const admins = users.filter(u => u.role === "admin");
+  const normalUsers = users.filter(u => u.role === "user");
+
+  /* =========================
+     TABLE RENDER
+  ========================= */
+  const renderTable = (list, title) => (
+    <div className="mb-10">
+      <h3 className="text-xl font-semibold mb-4 text-purple-400">
+        {title}
+      </h3>
+
+      <div className="overflow-x-auto">
+        <table className="table w-full bg-base-100">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>User</th>
+              <th>Contact</th>
+              <th>Plan</th>
+              <th>Validity</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Role</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {list.map((u, i) => (
+              <tr key={u._id}>
+                <td>{i + 1}</td>
+
+                <td>
+                  <p className="font-semibold">{u.name}</p>
+                  <p className="text-xs text-gray-500">{u.email}</p>
+                </td>
+
+                <td className="text-sm">
+                  📞 {u.phone || "N/A"} <br />
+                  📍 {u.address || "N/A"}
+                </td>
+
+                <td>{u.planName || "None"}</td>
+
+                <td>
+                  {u.validityLeft !== null
+                    ? `${u.validityLeft} days`
+                    : "—"}
+                </td>
+
+                <td className="text-sm">
+                  {u.paymentMethod || "N/A"} <br />
+                  {u.paymentStatus || "N/A"}
+                </td>
+
+                {/* STATUS */}
+                <td>
+                  {u.subscriptionId ? (
+                    <select
+                      className={`select select-xs ${
+                        u.planStatus === "active"
+                          ? "select-success"
+                          : "select-error"
+                      }`}
+                      value={u.planStatus}
+                      disabled={
+                        u.planStatus === "active" && u.validityLeft > 0
+                      }
+                      title={
+                        u.planStatus === "active" && u.validityLeft > 0
+                          ? "Cannot deactivate before validity expires"
+                          : ""
+                      }
+                      onChange={(e) =>
+                        handleStatusChange(
+                          u.subscriptionId,
+                          e.target.value
+                        )
+                      }
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+
+                {/* ROLE */}
+                <td>
+                  <select
+                    className="select select-bordered select-xs"
+                    value={u.role}
+                    onChange={(e) =>
+                      handleRoleChange(u.email, e.target.value)
+                    }
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </td>
+
+                {/* DELETE */}
+                <td>
+                  {!u.subscriptionId || u.planStatus === "inactive" ? (
+                    <button
+                      className="btn btn-xs btn-error"
+                      onClick={() => handleDeleteUser(u._id)}
+                    >
+                      Delete
+                    </button>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {list.length === 0 && (
+          <p className="text-center p-4 text-gray-500">
+            No records found.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  /* =========================
+     UI
+  ========================= */
+  return (
+    <section className="p-6 max-w-7xl mx-auto">
+      <h2 className="text-3xl font-bold mb-8 text-primary">
+        👥 Manage Users
+      </h2>
+
+      {/* USERS */}
+      <button
+        className="btn btn-sm btn-outline mb-3"
+        onClick={() => setShowUsers(!showUsers)}
+      >
+        {showUsers ? "Hide Users" : "Show Users"}
+      </button>
+
+      {showUsers && renderTable(normalUsers, "👤 Users")}
+
+      {/* ADMINS */}
+      <button
+        className="btn btn-sm btn-outline mb-3"
+        onClick={() => setShowAdmins(!showAdmins)}
+      >
+        {showAdmins ? "Hide Admins" : "Show Admins"}
+      </button>
+
+      {showAdmins && renderTable(admins, "🛡️ Admins")}
+    </section>
+  );
 };
 
 export default ManageUsers;

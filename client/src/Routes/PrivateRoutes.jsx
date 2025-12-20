@@ -1,27 +1,18 @@
 import { useContext } from "react";
-import { AuthContext } from "../Providers/AuthProvider";
 import { Navigate, useLocation } from "react-router-dom";
-import { RiseLoader } from "react-spinners";
+import { AuthContext } from "../context/AuthContext";
 
 const PrivateRoutes = ({ children }) => {
-    
-    const { user, loading } = useContext(AuthContext);
-    const location = useLocation();
-    
-    if (loading) {
-        return <RiseLoader
-            color="#e910cd"
-            loading
-            size={35}
-            speedMultiplier={1}
-        />
-    }
+  const { user, loading } = useContext(AuthContext);
+  const location = useLocation();
 
-    if (user) {
-        return children;
-    }
-    return <Navigate to="/login" state={{from: location}} replace></Navigate>
+  if (loading) return <div className="p-6">Loading…</div>;
 
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
 };
 
 export default PrivateRoutes;

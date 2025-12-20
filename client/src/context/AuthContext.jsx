@@ -1,38 +1,59 @@
-import React, { createContext, useEffect, useState } from 'react';
-import API from '../services/api';
+import React, { createContext, useEffect, useState } from "react";
+import API from "../services/api";
 
-// shape: { user, login, logout }
+// shape: { user, login, logout, createUser }
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      const raw = localStorage.getItem('user');
+      const raw = localStorage.getItem("user");
       return raw ? JSON.parse(raw) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   });
 
   useEffect(() => {
-    // If a token exists we set Authorization header automatically by API interceptor.
-    // Optionally you could call /auth/me here if you implement it on server.
+    // token handled by API interceptor
   }, []);
 
   function login(token, userObj) {
-    if (token) localStorage.setItem('token', token);
-    if (userObj) localStorage.setItem('user', JSON.stringify(userObj));
+    if (token) localStorage.setItem("token", token);
+    if (userObj) localStorage.setItem("user", JSON.stringify(userObj));
     setUser(userObj || null);
   }
 
   function logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
   }
 
-  const value = { user, login, logout };
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  
+  async function createUser(payload) {
+    /*
+      payload example:
+      {
+        name,
+        email,
+        password,
+        phone,
+        address,
+        location
+      }
+    */
+    const res = await API.post("/users", payload);
+    return res.data;
+  }
+
+  const value = { user, login, logout, createUser };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export default AuthContext;

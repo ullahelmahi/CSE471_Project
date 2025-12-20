@@ -1,66 +1,48 @@
-// AdminDashboard.jsx (Main Layout Page for Admin)
-import { Link, Outlet } from "react-router-dom";
-import { use, useContext, useEffect, useState } from "react";
-import { AuthContext } from "../../Providers/AuthProvider";
+import { NavLink, Outlet } from "react-router-dom";
 
 const AdminDashboard = () => {
-    const { user, logOut } = useContext(AuthContext);
-    const [adminUser, setAdminUser] = useState([]);
+  const linkClass = ({ isActive }) =>
+    isActive
+      ? "btn btn-primary btn-sm w-full"
+      : "btn btn-outline btn-sm w-full";
 
-    useEffect(() => {
-        fetch(`http://localhost:5000/users/${user?.email}`)
-            .then(response => response.json())
-            .then(data => setAdminUser(data))
-            .catch(error => console.log(error));
-    }, [user?.email]);
+  return (
+    <div className="min-h-screen grid grid-cols-1 md:grid-cols-5">
+      
+      {/* ===== SIDEBAR ===== */}
+      <aside className="bg-base-200 p-4 space-y-3 md:col-span-1">
+        <h2 className="text-xl font-bold mb-4">Admin Panel</h2>
 
-    const handleLogOut = () => {
-        logOut()
-            .then(() => {
-                // Logged out
-            })
-            .catch(error => console.log(error));
-    };
+        <NavLink to="/admin/manage-users" className={linkClass}>
+          Manage Users
+        </NavLink>
 
+        <NavLink to="/admin/manage-packages" className={linkClass}>
+          Manage Packages
+        </NavLink>
 
+        <NavLink to="/admin/support-status" className={linkClass}>
+          Support Requests
+        </NavLink>
 
-    return (
-        <div className="min-h-screen bg-base-200">
-            {/* Navbar */}
-            <nav className="bg-base-100 shadow flex justify-between items-center px-8 py-4">
-                <Link to="/admin" className="text-2xl font-bold text-primary">CityNet</Link>
+        <NavLink to="/admin/payments" className={linkClass}>
+          Payments
+        </NavLink>
 
-                {/* Center navigation links */}
-                <div className="flex gap-6">
-                    <Link to="/admin/manage-users" className="btn btn-sm btn-ghost">Manage Users</Link>
-                    <Link to="/admin/support-status" className="btn btn-sm btn-ghost">Support Status</Link>
-                    <Link to="/admin/manage-packages" className="btn btn-sm btn-ghost">Manage Packages</Link>
-                    <Link to="/admin/manage-subscriptions" className="btn btn-sm btn-ghost">Manage Subscriptions</Link>
-                </div>
+        <NavLink to="/admin/assign-technician" className={linkClass}>
+          Assign Technician
+        </NavLink>
 
-                {/* Admin Info */}
-                <div className="text-right">
-                    <p className="font-semibold">{adminUser.name || "Admin"}</p>
-                    <span className="badge badge-secondary text-xs">Admin</span>
-                </div>
+        
+      </aside>
 
-                {/* Sign Out Button */}
-                <div>
-                    <button onClick={handleLogOut} className="btn btn-sm btn-primary ml-4">Sign Out</button>
-                </div>
-
-            </nav>
-
-            {/* Dynamic content */}
-            <div className="p-6">
-                <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
-                <p className="mb-6">Welcome to the admin dashboard. Here you can manage users, view support requests, and manage packages.</p>
-
-                {/* Outlet for nested routes */}
-                <Outlet />
-            </div>
-        </div>
-    );
+      {/* ===== MAIN CONTENT ===== */}
+      <main className="md:col-span-4 p-6 bg-base-100">
+        {/* 👇 THIS IS THE MOST IMPORTANT LINE */}
+        <Outlet />
+      </main>
+    </div>
+  );
 };
 
 export default AdminDashboard;

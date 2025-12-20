@@ -1,78 +1,85 @@
-import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { AuthContext } from '../../../context/AuthContext';  // <-- NEW
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../../../context/AuthContext";
 
 const NavBar = () => {
-    const { user, logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    const navOptions = (
-        <>
-            <li><Link to="/">Home</Link></li>
-            <li><Link to="/about">About Us</Link></li>
-            <li><Link to="/service">Services</Link></li>
-            <li><Link to="/packages">Packages</Link></li>
-            <li><Link to="/ftp">FTP</Link></li>
-            <li><Link to="/reviews">Reviews</Link></li>
-            <li><Link to="/support">Support</Link></li>
-        </>
-    );
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
-    return (
-        <div className="navbar bg-base-200 fixed top-0 left-0 w-full z-50 shadow-md py-4 px-4 md:px-8 rounded-lg">
-            <div className="navbar-start">
-                <div className="dropdown">
-                    <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 6h16M4 12h8m-8 6h16" />
-                        </svg>
-                    </div>
-                    <ul
-                        tabIndex={0}
-                        className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-                        {navOptions}
-                    </ul>
-                </div>
-                <span className="text-4xl md:text-5xl font-extrabold text-primary leading-tight">CityNet</span>
-            </div>
+  const navClass = ({ isActive }) =>
+    isActive
+      ? "text-primary font-semibold"
+      : "hover:text-primary";
 
-            <div className="navbar-center hidden lg:flex">
-                <ul className="menu menu-horizontal px-1">
-                    {navOptions}
-                </ul>
-            </div>
+  return (
+    <div className="navbar bg-base-100 shadow px-6">
+      {/* LEFT */}
+      <div className="navbar-start">
+        <Link to="/" className="text-2xl font-bold text-primary">
+          CityNet
+        </Link>
+      </div>
 
-            <div className="navbar-end">
-                {/* 🔥 NEW login/logout logic */}
-                {!user ? (
-                    <>
-                        <Link to="/login" className="btn btn-primary mr-2">
-                            Login
-                        </Link>
-                        <Link to="/register" className="btn btn-outline">
-                            Register
-                        </Link>
-                    </>
-                ) : (
-                    <>
-                        <span className="mr-3 font-semibold">{user.name || user.email}</span>
-                        <Link to="/dashboard" className="btn btn-outline mr-2">Dashboard</Link>
-                        <button onClick={logout} className="btn btn-secondary">
-                            Logout
-                        </button>
-                    </>
-                )}
-            </div>
-        </div>
-    );
+      {/* CENTER – RESTORED PUBLIC NAV */}
+      <div className="navbar-center hidden lg:flex">
+        <ul className="menu menu-horizontal gap-6">
+          <li><NavLink to="/" className={navClass}>Home</NavLink></li>
+          <li><NavLink to="/about" className={navClass}>About Us</NavLink></li>
+          <li><NavLink to="/packages" className={navClass}>Packages</NavLink></li>
+          <li><NavLink to="/reviews" className={navClass}>Reviews</NavLink></li>
+          <li><NavLink to="/ftp" className={navClass}>FTP</NavLink></li>
+          <li><NavLink to="/notice" className={navClass}>Notice</NavLink></li>
+          {user?.role !== "admin" && (
+              <li><Link to="/support">Support</Link></li>
+            )}
+        </ul>
+      </div>
+
+      {/* RIGHT – AUTH & DASHBOARD */}
+      <div className="navbar-end gap-3">
+        {!user && (
+          <>
+            <Link to="/login" className="btn btn-outline btn-primary btn-sm">
+              Login
+            </Link>
+            <Link to="/register" className="btn btn-primary btn-sm">
+              Register
+            </Link>
+          </>
+        )}
+
+        {user && (
+          <>
+            {/* USER → USER DASHBOARD */}
+            {user.role === "user" && (
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="btn btn-ghost btn-sm"
+              >
+                {user.name || "My Dashboard"}
+              </button>
+            )}
+
+            {/* ADMIN → ADMIN DASHBOARD */}
+            {user.role === "admin" && (
+              <Link to="/admin" className="btn btn-secondary btn-sm">
+                Admin Dashboard
+              </Link>
+            )}
+
+            <button onClick={handleLogout} className="btn btn-error btn-sm">
+              Logout
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default NavBar;

@@ -1,98 +1,161 @@
-import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { MdDriveFileRenameOutline, MdEmail } from "react-icons/md";
-import { FaLock } from "react-icons/fa";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { useForm } from "react-hook-form";
-import Swal from "sweetalert2";
-import { FcGoogle } from "react-icons/fc";
-import { saveUserToDb } from '../../Shared/SaveUser/saveUserToDb';
-import API from '../../../services/api';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import axios from "axios";
+import MapPicker from "../../Support/MapPicker";
 
-const generateUserId = () => {
-  const timestamp = Date.now().toString().slice(-6);
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `U-${timestamp}-${random}`;
-};
-
-export default function SignUp() {
-  const [showPassword, setShowPassword] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({ mode: "onBlur" });
-  const [errorMessage, setErrorMessage] = useState("");
+const SignUp = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
 
-  const onSubmit = async (data) => {
-    setErrorMessage("");
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    phone: "",
+    address: "",
+  });
+
+  const [location, setLocation] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  /* ======================
+     INPUT HANDLER
+  ====================== */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // ✅ PHONE: numeric + max 11 digits
+    if (name === "phone") {
+      if (!/^\d*$/.test(value)) return;
+      if (value.length > 11) return;
+    }
+
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  /* ======================
+     AUTO ADDRESS FROM MAP
+  ====================== */
+  const handleAddressFromMap = (address) => {
+    setForm(prev => ({ ...prev, address }));
+  };
+
+  /* ======================
+     SUBMIT
+  ====================== */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (form.phone.length !== 11) {
+      return toast.error("Phone number must be exactly 11 digits");
+    }
+
+    if (!location) {
+      return toast.error("Please select your location on map");
+    }
+
+    setLoading(true);
+
     try {
-      // Register on server (creates hashed password)
-      await API.post("/auth/register", { name: data.name, email: data.email, password: data.password });
+      await axios.post("http://localhost:5000/users", {
+        ...form,
+        location, // { lat, lng }
+      });
 
-      // Save public profile similarly to old flow (optional)
-      await saveUserToDb({ name: data.name, email: data.email, authProvider: "email" });
-
-      reset();
-      Swal.fire({ icon: "success", title: "Welcome to CityNet Family", toast: true, timer: 1500, showConfirmButton: false, position: "top-end" });
-      navigate("/login", { replace: true });
+      toast.success("Account created successfully");
+      navigate("/login");
     } catch (err) {
-      console.error(err);
-      const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || "Registration failed";
-      setErrorMessage(msg);
+      toast.error(err.response?.data?.message || "Signup failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <section className="min-h-screen flex items-center justify-center bg-rose-100 px-4">
-      <div className="max-w-6xl w-full bg-base-100 rounded-2xl shadow-lg overflow-hidden flex flex-col md:flex-row">
-        <div className="md:w-1/2 bg-gradient-to-tr from-purple-400 to-pink-300 flex items-center justify-center">
-          <img src="https://i.ibb.co/chd8KCCB/signup-image.jpg" alt="Signup Visual" className="object-cover h-full w-full" />
+    <section className="max-w-3xl mx-auto p-6">
+      <h2 className="text-3xl font-bold mb-6 text-center">
+        Create Account
+      </h2>
+
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-base-200 p-6 rounded-lg"
+      >
+        <input
+          name="name"
+          placeholder="Full Name"
+          className="input input-bordered w-full"
+          required
+          value={form.name}
+          onChange={handleChange}
+        />
+
+        <input
+          name="email"
+          type="email"
+          placeholder="Email"
+          className="input input-bordered w-full"
+          required
+          value={form.email}
+          onChange={handleChange}
+        />
+
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          className="input input-bordered w-full"
+          required
+          value={form.password}
+          onChange={handleChange}
+        />
+
+        <input
+          name="phone"
+          placeholder="Phone (11 digits)"
+          className="input input-bordered w-full"
+          required
+          value={form.phone}
+          onChange={handleChange}
+        />
+
+        <textarea
+          name="address"
+          placeholder="Full Address"
+          className="textarea textarea-bordered w-full"
+          required
+          value={form.address}
+          onChange={handleChange}
+        />
+
+        {/* MAP */}
+        <div>
+          <p className="font-semibold mb-2">
+            📍 Select Your Location
+          </p>
+
+          <MapPicker
+            onSelect={setLocation}
+            onAddressSelect={handleAddressFromMap}
+          />
+
+          {!location && (
+            <p className="text-sm text-red-400 mt-1">
+              Location is required
+            </p>
+          )}
         </div>
 
-        <div className="md:w-1/2 p-8 md:p-12 space-y-6">
-          <h2 className="text-3xl font-bold">
-            Welcome to <span className="text-4xl font-extrabold text-primary">CityNet</span> <span className="text-secondary">Sign Up</span> Today!
-          </h2>
-          <p className="text-gray-600 text-sm">Join CityNet today and enjoy high-speed internet with unmatched reliability.</p>
-
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div className="form-control relative">
-              <label className="label"><span className="label-text">Full Name</span></label>
-              <MdDriveFileRenameOutline className="absolute top-8 left-2 text-slate-900 text-2xl" />
-              <input type="text" placeholder="Enter your name" className="input w-full pl-10 bg-transparent border-0 border-b-2 border-gray-300" {...register("name", { required: true })} />
-              {errors.name && <span className="font-semibold text-xs text-fuchsia-600">This field is required</span>}
-            </div>
-
-            <div className="form-control relative">
-              <label className="label"><span className="label-text">Email Address</span></label>
-              <MdEmail className="absolute top-9 left-3 text-slate-900 text-xl" />
-              <input type="email" placeholder="Enter your email" className="input w-full pl-10 bg-transparent border-0 border-b-2 border-gray-300" {...register("email", { required: true })} />
-              {errors.email && <span className="font-semibold text-xs text-fuchsia-600">This field is required!</span>}
-            </div>
-
-            <div className="form-control relative">
-              <label className="label"><span className="label-text">Password</span></label>
-              <FaLock className="absolute top-8 left-3 text-slate-900 text-xl" />
-              <input type={showPassword ? "text" : "password"} placeholder="Create a strong password" className="input w-full pl-10 pr-10 bg-transparent border-0 border-b-2 border-gray-300" {...register("password", { required: true })} />
-              <div className="absolute top-8 right-3 text-gray-500 cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
-                {showPassword ? <AiOutlineEyeInvisible size={22} /> : <AiOutlineEye size={22} />}
-              </div>
-              {errors.password && <span className="font-semibold text-xs text-fuchsia-600">This field is required!</span>}
-            </div>
-
-            <button type="submit" className="btn btn-primary w-full mt-4">Sign Up</button>
-            {errorMessage && <div role="alert" className="alert alert-error"><span>{errorMessage}</span></div>}
-          </form>
-
-          <div className='text-center'>
-            <button type="button" onClick={() => Swal.fire({ icon: "info", title: "Google Sign-In", text: "Google sign-in is not configured in this build.", toast: true, position: "top-end", showConfirmButton: false, timer: 2000 })} className="btn btn-outline btn-primary flex items-center justify-center gap-2">
-              <FcGoogle /> Sign in with Google
-            </button>
-          </div>
-
-          <p className="text-center text-sm text-gray-500 mt-4">Already have an account? <Link to="/login" className="link link-secondary">Log in</Link></p>
-        </div>
-      </div>
+        <button
+          type="submit"
+          className="btn btn-primary w-full"
+          disabled={loading}
+        >
+          {loading ? "Creating Account..." : "Sign Up"}
+        </button>
+      </form>
     </section>
   );
-}
+};
+
+export default SignUp;

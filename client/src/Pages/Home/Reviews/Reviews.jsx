@@ -1,57 +1,86 @@
-import React, { useEffect } from 'react';
-import { Carousel } from 'react-responsive-carousel';
-import 'react-responsive-carousel/lib/styles/carousel.min.css'; // Import carousel styles
+import { useEffect, useState } from "react";
+import { Carousel } from "react-responsive-carousel";
+import API from "../../../services/api";
+import "react-responsive-carousel/lib/styles/carousel.min.css";
 
 const Reviews = () => {
-    const [reviews, setReviews] = React.useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(0);
 
-    useEffect(() => {
-        fetch('/reviews.json') // Adjust the path if necessary
-            .then(res => res.json())
-            .then(data => setReviews(data))
-            .catch(error => console.error('Error fetching reviews:', error));
-    }, []);
+  useEffect(() => {
+    API.get("/reviews").then(res => {
+      setReviews(res.data || []);
 
-    return (
-        <div className="my-10">
-            <h1 className="text-4xl text-center font-bold mb-6">What Our Clients Say</h1>
-            <p className="text-center mb-10">We are proud to have served thousands of satisfied customers. Here are some of their testimonials:</p>
+      if (res.data?.length) {
+        const avg =
+          res.data.reduce((sum, r) => sum + Number(r.rating || 0), 0) /
+          res.data.length;
+        setAvgRating(avg.toFixed(1));
+      }
+    });
+  }, []);
 
-            <Carousel
-                showArrows={true}
-                infiniteLoop={true}
-                showThumbs={false}
-                showStatus={false}
-                autoPlay={true}
-                interval={5000}
-                className="w-3/4 mx-auto"
-            >
-                {reviews.map(review => (
-                    <div key={review._id.$oid} className="p-6">
-                        <div className="card w-full bg-base-100 shadow-xl">
-                            <div className="card-body">
-                                <h2 className="card-title text-xl font-bold">{review.userName}</h2>
-                                <p className="text-sm text-gray-500">Plan: {review.planId}</p>
-                                <p className="text-sm text-gray-500">Rating: {review.rating} / 5</p>
-                                <p className="mt-4">{review.comment}</p>
-                                <div className="mt-4">
-                                    <span className="text-sm font-semibold">Tags:</span>
-                                    <ul className=" list-inside text-sm text-gray-600">
-                                        {review.tags.map((tag, index) => (
-                                            <li key={index}>{tag}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <p className="text-xs text-gray-400 mt-4">
-                                    Reviewed on: {new Date(review.createdAt.$date).toLocaleDateString()}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </Carousel>
-        </div>
-    );
+  return (
+    <section className="bg-black py-16">
+      <h2 className="text-4xl font-bold text-center text-purple-500">
+        What Our Clients Say
+      </h2>
+
+      <p className="text-center text-white mt-2">
+        Honest feedback from our valued customers
+      </p>
+
+      <p className="text-center text-yellow-400 mt-4 text-lg">
+        ⭐ Average Rating: {avgRating} / 5
+      </p>
+
+      <Carousel
+        autoPlay
+        infiniteLoop
+        showThumbs={false}
+        showStatus={false}
+        stopOnHover
+        interval={5000}
+        className="max-w-3xl mx-auto mt-10"
+      >
+        {reviews.map(r => (
+          <div key={r._id} className="p-6">
+            <div className="bg-gray-100 p-6 rounded-lg text-black">
+
+              {/* HEADER */}
+              <div className="flex justify-between text-sm text-gray-600">
+                <span className="font-semibold">
+                  {r.userName || "Anonymous"}
+                </span>
+                <span>
+                  {new Date(r.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+
+              {/* PLAN */}
+              <h3 className="text-lg font-semibold mt-2">
+                {r.planName}
+              </h3>
+
+              {/* RATING */}
+              <p className="text-yellow-500 mt-1">
+                {"★".repeat(r.rating)}
+                {"☆".repeat(5 - r.rating)}
+              </p>
+
+              {/* MESSAGE BOX (RECTANGLE) */}
+              <div
+                className="border border-purple-400 mt-4 p-4 bg-white"
+                style={{ borderRadius: "4px" }}
+              >
+                {r.message}
+              </div>
+            </div>
+          </div>
+        ))}
+      </Carousel>
+    </section>
+  );
 };
 
 export default Reviews;
