@@ -847,7 +847,6 @@ async function run() {
       /* ===== INSTALLATION TASKS ===== */
       const installs = await subscriptions.find({
         isFirstTime: true,
-        technicianAssigned: false,
         status: "active",
       }).toArray();
 
