@@ -181,10 +181,27 @@ const AdminSupportManager = () => {
 
                 <p className="mt-1">
                   <strong>Type:</strong>{" "}
-                  <span className="font-semibold">
-                    {req.type === "installation" ? "Installation" : "Service"}
+                  <span
+                    className={`inline-block mt-2 px-2 py-1 text-xs rounded font-semibold ${
+                      req.type === "installation"
+                        ? "bg-blue-600 text-white"
+                        : req.type === "service"
+                        ? "bg-yellow-500 text-black"
+                        : "bg-red-500 text-white"
+                    }`}
+                  >
+                    {req.type.toUpperCase()}
                   </span>
                 </p>
+                {/* ISSUE TYPE */}
+                {req.issueType && (
+                  <p className="mt-1">
+                    <strong>Issue Type:</strong>{" "}
+                    <span className="badge badge-info ml-2">
+                      {req.issueType}
+                    </span>
+                  </p>
+                )}
 
                 {req.technicianAssigned && (
                   <span className="inline-block mt-2 px-2 py-1 text-xs rounded bg-blue-600 text-white">
@@ -204,21 +221,23 @@ const AdminSupportManager = () => {
                 )}
 
                 {/* STATUS */}
-                <div className="mt-4">
-                  <label className="font-semibold block mb-1">Status</label>
-                  <select
-                    value={currentStatus}
-                    disabled={isFinalized}
-                    onChange={e =>
-                      handleStatusChange(req._id, e.target.value)
-                    }
-                    className="select select-bordered w-full"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="solved">Solved</option>
-                  </select>
-                </div>
+                {(req.type === "service" || req.type === "complaint") && (
+                  <div className="mt-4">
+                    <label className="font-semibold block mb-1">Status</label>
+                    <select
+                      value={currentStatus}
+                      disabled={isFinalized}
+                      onChange={e =>
+                        handleStatusChange(req._id, e.target.value)
+                      }
+                      className="select select-bordered w-full"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="solved">Solved</option>
+                    </select>
+                  </div>
+                )}
 
                 {/* ADMIN MESSAGE (SERVICE ONLY) */}
                 {currentStatus === "solved" &&
@@ -237,39 +256,42 @@ const AdminSupportManager = () => {
 
                 {/* ACTIONS */}
                 <div className="flex flex-col gap-2 mt-4">
-                  <button
-                    onClick={() => handleUpdate(req)}
-                    disabled={isFinalized}
-                    className={`btn btn-sm ${
-                      isFinalized
-                        ? "bg-gray-400 text-gray-800 cursor-not-allowed"
-                        : currentStatus === "solved"
-                        ? "btn-success"
-                        : "btn-primary"
-                    }`}
-                  >
-                    {isFinalized ? "Done" : "Update"}
-                  </button>
-
-                  {req.status !== "solved" && (
+                  {(req.type === "service" || req.type === "complaint") && (
                     <button
-                      className="btn btn-xs btn-outline"
-                      onClick={() =>
-                        navigate("/admin/assign-technician", {
-                          state: {
-                            taskType:
-                              req.type === "installation"
-                                ? "installation"
-                                : "service",
-                            relatedId: req._id,
-                            userId: req.userId,
-                          },
-                        })
-                      }
+                      onClick={() => handleUpdate(req)}
+                      disabled={isFinalized}
+                      className={`btn btn-sm ${
+                        isFinalized
+                          ? "bg-gray-400 text-gray-800 cursor-not-allowed"
+                          : currentStatus === "solved"
+                          ? "btn-success"
+                          : "btn-primary"
+                      }`}
                     >
-                      Assign Technician
+                      {isFinalized ? "Done" : "Update"}
                     </button>
                   )}
+
+                  {/* ASSIGN TECHNICIAN */}
+                    {req.type !== "complaint" && req.status !== "solved" && (
+                      <button
+                        className="btn btn-xs btn-outline"
+                        onClick={() =>
+                          navigate("/admin/assign-technician", {
+                            state: {
+                              taskType:
+                                req.type === "installation"
+                                  ? "installation"
+                                  : "service",
+                              relatedId: req._id,
+                              userId: req.userId,
+                            },
+                          })
+                        }
+                      >
+                        Assign Technician
+                      </button>
+                    )}
                   {/* INSTALLATION ONLY */}
                   {req.type === "installation" && (
                     <button
