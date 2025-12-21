@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import axios from "axios";
+import API from "../../services/api";
 import MapPicker from "../../Support/MapPicker";
 
 const SignUp = () => {
@@ -57,9 +57,9 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/users", {
+      await API.post("/users", {
         ...form,
-        location, // { lat, lng }
+        location,
       });
 
       toast.success("Account created successfully");

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import LocationViewer from "./LocationViewer";
 import Swal from "sweetalert2";
+import API from "../../services/api";
 
 const STATUS_ORDER = {
   pending: 1,
@@ -22,38 +23,29 @@ const AdminSupportManager = () => {
      FETCH SUPPORT + INSTALLATION
   ========================= */
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Admin not authenticated");
-      setLoading(false);
-      return;
-    }
+    const loadData = async () => {
+      try {
+        const [supportRes, taskRes, usersRes] = await Promise.all([
+          API.get("/support-requests"),
+          API.get("/admin/pending-tasks"),
+          API.get("/admin/users"),
+        ]);
 
-    Promise.all([
-      fetch("http://localhost:5000/support-requests", {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(res => res.json()),
+        const supportList = Array.isArray(supportRes.data)
+          ? supportRes.data
+          : [];
+        const taskList = Array.isArray(taskRes.data)
+          ? taskRes.data
+          : [];
+        const usersList = Array.isArray(usersRes.data)
+          ? usersRes.data
+          : [];
 
-      fetch("http://localhost:5000/admin/pending-tasks", {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(res => res.json()),
-
-      fetch("http://localhost:5000/admin/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(res => res.json()),
-    ])
-      .then(([supportData, taskData, usersData]) => {
-        const supportList = Array.isArray(supportData) ? supportData : [];
-        const taskList = Array.isArray(taskData) ? taskData : [];
-        const usersList = Array.isArray(usersData) ? usersData : [];
-
-        // 🔑 Build user lookup
         const userMap = {};
         usersList.forEach(u => {
-          userMap[u._id.toString()] = u;
+          userMap[u._id] = u;
         });
 
-        // 🔧 Convert installation → support-like
         const installationAsSupport = taskList
           .filter(t => t.taskType === "installation")
           .map(t => {
@@ -92,12 +84,14 @@ const AdminSupportManager = () => {
 
         setStatusUpdates(statusMap);
         setAdminMessages(messageMap);
+      } catch {
+        toast.error("Failed to load support requests");
+      } finally {
         setLoading(false);
-      })
-      .catch(() => {
-        toast.error("Failed to load requests");
-        setLoading(false);
-      });
+      }
+    };
+
+    loadData();
   }, []);
 
   /* =========================
@@ -137,20 +131,10 @@ const AdminSupportManager = () => {
     }
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/support-requests/${req._id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            status: newStatus,
-            adminComments,
-          }),
-        }
-      );
+      const res = await API.put(`/support-requests/${req._id}`, {
+        status: newStatus,
+        adminComments,
+      });
 
       if (!res.ok) throw new Error();
 
@@ -304,20 +288,10 @@ const AdminSupportManager = () => {
                         try {
                           const token = localStorage.getItem("token");
 
-                          const res = await fetch(
-                            `http://localhost:5000/admin/installation/${req._id}/complete`,
-                            {
-                              method: "PATCH",
-                              headers: {
-                                "Content-Type": "application/json",
-                                Authorization: `Bearer ${token}`,
-                              },
-                              body: JSON.stringify({
-                                relatedId: req._id,
-                                taskType: "installation",
-                              }),
-                            }
-                          );
+                          const res = await API.patch(`/admin/installation/${req._id}/complete`, {
+                            relatedId: req._id,
+                            taskType: "installation",
+                          });
 
                           if (!res.ok) throw new Error();
 

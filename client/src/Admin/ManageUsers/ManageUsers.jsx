@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../services/api";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 
@@ -15,12 +15,7 @@ const ManageUsers = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await axios.get(
-        "http://localhost:5000/admin/users",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await API.get("/admin/users");
 
       setUsers(res.data || []);
     } catch {
@@ -39,11 +34,7 @@ const ManageUsers = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.patch(
-        `http://localhost:5000/admin/users/role/${email}`,
-        { role },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await API.patch(`/admin/users/role/${email}`, { role });
 
       toast.success("Role updated");
       fetchUsers();
@@ -59,10 +50,9 @@ const ManageUsers = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.patch(
-        `http://localhost:5000/admin/subscription/${subscriptionId}/status`,
-        { status },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await API.patch(
+        `/admin/subscription/${subscriptionId}/status`,
+        { status }
       );
 
       toast.success("Plan status updated");
@@ -89,10 +79,7 @@ const ManageUsers = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.delete(
-        `http://localhost:5000/admin/users/${userId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await API.delete(`/admin/users/${userId}`);
 
       toast.success("User deleted");
       fetchUsers();

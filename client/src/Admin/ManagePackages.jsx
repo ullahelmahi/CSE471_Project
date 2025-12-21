@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../services/api";
 import Swal from "sweetalert2";
 
 const ManagePackages = () => {
@@ -30,7 +30,7 @@ const ManagePackages = () => {
 
     const fetchPackages = async () => {
         try {
-            const res = await axios.get("http://localhost:5000/packages");
+            const res = await API.get("/packages");
             setPackages(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error("Failed to load packages", err);
@@ -74,18 +74,13 @@ const ManagePackages = () => {
 
         try {
             if (editingPackage) {
-                await axios.patch(
-                    `http://localhost:5000/packages/${editingPackage._id}`,
-                    payload,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                await API.patch(
+                `/packages/${editingPackage._id}`,
+                payload
                 );
                 Swal.fire("Updated!", "Package updated successfully.", "success");
             } else {
-                await axios.post(
-                    "http://localhost:5000/packages",
-                    payload,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+                await API.post("/packages", payload);
                 Swal.fire("Added!", "New package added successfully.", "success");
             }
 
@@ -154,9 +149,7 @@ const ManagePackages = () => {
         try {
             const token = localStorage.getItem("token");
 
-            await axios.delete(`http://localhost:5000/packages/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await API.delete(`/packages/${id}`);
 
             Swal.fire("Deleted!", "Package removed successfully.", "success");
             fetchPackages();

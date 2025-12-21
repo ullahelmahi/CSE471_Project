@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../services/api";
 import Swal from "sweetalert2";
 
 const AdminPayments = () => {
@@ -13,12 +13,7 @@ const AdminPayments = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await axios.get(
-        "http://localhost:5000/admin/payments",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await API.get("/admin/payments");
 
       setPayments(res.data || []);
     } catch (err) {
@@ -49,11 +44,7 @@ const AdminPayments = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.patch(
-        `http://localhost:5000/admin/payments/${id}/approve`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await API.patch(`/admin/payments/${id}/approve`);
 
       Swal.fire("Approved", "Payment approved successfully", "success");
       fetchPayments();
@@ -83,11 +74,7 @@ const AdminPayments = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.patch(
-        `http://localhost:5000/admin/payments/${id}/reject`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await API.patch(`/admin/payments/${id}/reject`);
 
       Swal.fire("Rejected", "Payment rejected", "success");
       fetchPayments();
