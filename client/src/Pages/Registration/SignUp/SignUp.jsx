@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import API from "../../services/api";
+import API from "../../../services/api";
 import MapPicker from "../../Support/MapPicker";
 
 const SignUp = () => {
