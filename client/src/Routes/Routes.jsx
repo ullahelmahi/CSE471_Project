@@ -27,6 +27,8 @@ import ManageUsers from "../Admin/ManageUsers/ManageUsers";
 import ManagePackages from "../Admin/ManagePackages";
 import AdminPayments from "../Admin/AdminPayments/AdminPayments";
 import AdminAssignTechnician from "../Admin/AdminAssignTechnician/AdminAssignTechnician";
+import AdminServiceFeedback from "../Admin/AdminServiceFeedback/AdminServiceFeedback";
+
 
 export const router = createBrowserRouter([
   {
@@ -82,6 +84,7 @@ export const router = createBrowserRouter([
           { path: "support-status", element: <AdminSupportManager /> },
           { path: "payments", element: <AdminPayments /> },
           { path: "assign-technician", element: <AdminAssignTechnician /> },
+          { path: "service-feedback", element: <AdminServiceFeedback /> }
         ],
       },
     ],

@@ -33,6 +33,10 @@ const AdminDashboard = () => {
           Assign Technician
         </NavLink>
 
+        <NavLink to="/admin/service-feedback" className={({ isActive }) => `btn w-full ${isActive ? "btn-primary" : "btn-outline"}`}>
+          Service Feedback
+        </NavLink>
+
         
       </aside>
 

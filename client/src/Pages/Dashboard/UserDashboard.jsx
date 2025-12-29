@@ -4,6 +4,7 @@ import API from "../../services/api";
 import EachPackage from "../Home/Packages/EachPackage";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import ServiceFeedbackModal from "./ServiceFeedbackModal";
 
 const UserDashboard = () => {
   const { user, loading: authLoading } = useContext(AuthContext);
@@ -19,6 +20,9 @@ const UserDashboard = () => {
 
   const [hasReviewed, setHasReviewed] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const [serviceFeedbackGiven, setServiceFeedbackGiven] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // 🔽 HIDE / SHOW STATES
   const [showSubscription, setShowSubscription] = useState(true);
@@ -56,6 +60,19 @@ const UserDashboard = () => {
         setPackages(pkgRes.data || []);
         setSupportRequests(supportRes.data || []);
         setTechnician(techRes?.data || null);
+        // 🔍 Check feedback only for SERVICE tasks
+        if (techRes?.data && techRes.data.taskType === "service") {
+          try {
+            const feedbackCheck = await API.get(
+              `/service-feedback/check/${techRes.data.relatedId}`
+            );
+            setServiceFeedbackGiven(feedbackCheck.data.exists);
+          } catch {
+            setServiceFeedbackGiven(false);
+          }
+        } else {
+          setServiceFeedbackGiven(false);
+        }
 
         const active = subsRes.data.find((s) => s.status === "active");
         const reviewed = reviewRes.data.some(
@@ -106,29 +123,91 @@ const UserDashboard = () => {
       : 0;
 
   /* ======================
-     REVIEW
+    REVIEW (PLAN ONLY)
   ====================== */
   const handleReview = async () => {
     const { value } = await Swal.fire({
       title: "✨ Share Your Experience",
       background: "#111827",
       color: "#ffffff",
+
       html: `
+        <!-- STAR RATING -->
+        <div style="text-align:center;margin-bottom:12px;">
+          <div id="starRating" style="font-size:26px;cursor:pointer;">
+            ${[1,2,3,4,5]
+              .map(
+                n =>
+                  `<span data-value="${n}" style="color:#9ca3af;margin:0 4px;">★</span>`
+              )
+              .join("")}
+          </div>
+        </div>
+
+        <!-- REVIEW TEXT -->
         <textarea
           id="reviewText"
           placeholder="Write your experience..."
-          style="width:100%;min-height:120px;padding:12px;border:2px solid #a855f7;background:#f3f4f6;color:#000"
+          style="
+            width:100%;
+            min-height:120px;
+            padding:12px;
+            border:2px solid #6366f1;
+            background:#f3f4f6;
+            color:#000;
+            border-radius:8px;
+            margin-bottom:12px;
+          "
         ></textarea>
+
+        <!-- ANONYMOUS TOGGLE -->
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;">
+          <input type="checkbox" id="anonymousToggle" checked />
+          Submit as Anonymous
+        </label>
       `,
+
       showCancelButton: true,
       confirmButtonText: "Submit Review",
+
+      didOpen: () => {
+        let selectedRating = 0;
+        const stars = document.querySelectorAll("#starRating span");
+
+        stars.forEach(star => {
+          star.addEventListener("click", () => {
+            selectedRating = Number(star.dataset.value);
+            stars.forEach(s => {
+              s.style.color =
+                Number(s.dataset.value) <= selectedRating
+                  ? "#facc15"
+                  : "#9ca3af";
+            });
+            document.getElementById("starRating").dataset.rating =
+              selectedRating;
+          });
+        });
+      },
+
       preConfirm: () => {
-        const message =
-          document.getElementById("reviewText").value.trim();
-        if (!message) {
-          Swal.showValidationMessage("Review required");
+        const rating = Number(
+          document.getElementById("starRating").dataset.rating || 0
+        );
+        const message = document.getElementById("reviewText").value.trim();
+        const anonymous =
+          document.getElementById("anonymousToggle").checked;
+
+        if (!rating) {
+          Swal.showValidationMessage("Please select a star rating");
+          return;
         }
-        return message;
+
+        if (!message) {
+          Swal.showValidationMessage("Review message is required");
+          return;
+        }
+
+        return { rating, message, anonymous };
       },
     });
 
@@ -138,12 +217,19 @@ const UserDashboard = () => {
       await API.post("/reviews", {
         planId: activePlan.planId,
         planName: activePlan.planName,
-        rating: 5,
-        message: value,
-        anonymous: true,
+        rating: value.rating,
+        message: value.message,
+        anonymous: value.anonymous,
+        userName: user.name, // ✅ AUTO FROM AUTH CONTEXT
       });
 
-      Swal.fire("Thank you!", "Review submitted", "success");
+      Swal.fire({
+        icon: "success",
+        title: "Thank You!",
+        text: "Thanks for sharing your valuable review.",
+        confirmButtonColor: "#6366f1",
+      });
+
       setHasReviewed(true);
     } catch (err) {
       Swal.fire("Error", "Failed to submit review", "error");
@@ -261,31 +347,42 @@ const UserDashboard = () => {
                   </p>
 
                   <div className="mt-3 p-3 bg-base-100 rounded">
-                    <p className="font-semibold mb-1">
-                      Technician Details
-                    </p>
+                    <p className="font-semibold mb-1">Technician Details</p>
                     <p>
                       <strong>Name:</strong>{" "}
-                      {technician.technician?.name}
+                      {technician.technician?.name || "N/A"}
                     </p>
                     <p>
                       <strong>Phone:</strong>{" "}
-                      {technician.technician?.phone}
+                      {technician.technician?.phone || "N/A"}
                     </p>
                     <p>
                       <strong>Area:</strong>{" "}
-                      {technician.technician?.area}
+                      {technician.technician?.area || "N/A"}
                     </p>
                   </div>
 
-                  <p className="text-sm text-gray-400 mt-3">
-                    The technician will contact you before visiting.
-                  </p>
+                  {/* SERVICE FEEDBACK BUTTON */}
+                  {technician.taskType === "service" &&
+                    technician.status === "completed" &&
+                    !serviceFeedbackGiven && (
+                      <button
+                        className="btn btn-sm btn-primary mt-4"
+                        onClick={() => setShowFeedbackModal(true)}
+                      >
+                        Give Feedback
+                      </button>
+                    )}
+
+                  {serviceFeedbackGiven &&
+                    technician.taskType === "service" && (
+                      <span className="badge badge-success mt-4">
+                        Feedback Submitted
+                      </span>
+                    )}
                 </>
               ) : (
-                <p className="text-gray-400">
-                  No technician assigned yet.
-                </p>
+                <p className="text-gray-400">No technician assigned yet.</p>
               )}
             </>
           )}
@@ -338,6 +435,21 @@ const UserDashboard = () => {
           )}
         </div>
       </div>
+    {showFeedbackModal &&
+      technician?.relatedId &&
+      technician?.technician?._id && (
+        <ServiceFeedbackModal
+          service={{
+            _id: technician.relatedId,
+            technicianId: technician.technician._id,
+          }}
+          onClose={() => setShowFeedbackModal(false)}
+          onSuccess={() => {
+            setServiceFeedbackGiven(true);
+            setShowFeedbackModal(false);
+          }}
+        />
+    )}
     </section>
   );
 };

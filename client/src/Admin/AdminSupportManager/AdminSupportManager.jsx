@@ -19,78 +19,80 @@ const AdminSupportManager = () => {
   const [adminMessages, setAdminMessages] = useState({});
   const [loading, setLoading] = useState(true);
 
+  const loadData = async () => {
+  try {
+    setLoading(true);
+
+    const [supportRes, taskRes, usersRes] = await Promise.all([
+      API.get("/support-requests"),
+      API.get("/admin/pending-tasks"),
+      API.get("/admin/users"),
+    ]);
+
+    const supportList = Array.isArray(supportRes.data)
+      ? supportRes.data
+      : [];
+    const taskList = Array.isArray(taskRes.data)
+      ? taskRes.data
+      : [];
+    const usersList = Array.isArray(usersRes.data)
+      ? usersRes.data
+      : [];
+
+    const userMap = {};
+    usersList.forEach(u => {
+      userMap[u._id] = u;
+    });
+
+    const installationAsSupport = taskList
+      .filter(t => t.taskType === "installation")
+      .map(t => {
+        const user = userMap[t.userId] || {};
+        return {
+          _id: t.relatedId,
+          userId: t.userId,
+          name: user.name || "Unknown",
+          email: user.email || "N/A",
+          phone: user.phone || "N/A",
+          location: user.location || null,
+          type: "installation",
+          supportMessage: `Plan: ${t.plan}`,
+          status: "pending",
+          technicianAssigned: false,
+          isVirtual: true,
+        };
+      });
+
+    const merged = [...installationAsSupport, ...supportList];
+
+    merged.sort(
+      (a, b) =>
+        STATUS_ORDER[a.status || "pending"] -
+        STATUS_ORDER[b.status || "pending"]
+    );
+
+    setRequests(merged);
+
+    const statusMap = {};
+    const messageMap = {};
+    merged.forEach(req => {
+      statusMap[req._id] = req.status || "pending";
+      messageMap[req._id] = req.adminComments || "";
+    });
+
+    setStatusUpdates(statusMap);
+    setAdminMessages(messageMap);
+  } catch {
+    toast.error("Failed to load support requests");
+  } finally {
+    setLoading(false);
+  }
+};
+
   /* =========================
      FETCH SUPPORT + INSTALLATION
   ========================= */
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [supportRes, taskRes, usersRes] = await Promise.all([
-          API.get("/support-requests"),
-          API.get("/admin/pending-tasks"),
-          API.get("/admin/users"),
-        ]);
-
-        const supportList = Array.isArray(supportRes.data)
-          ? supportRes.data
-          : [];
-        const taskList = Array.isArray(taskRes.data)
-          ? taskRes.data
-          : [];
-        const usersList = Array.isArray(usersRes.data)
-          ? usersRes.data
-          : [];
-
-        const userMap = {};
-        usersList.forEach(u => {
-          userMap[u._id] = u;
-        });
-
-        const installationAsSupport = taskList
-          .filter(t => t.taskType === "installation")
-          .map(t => {
-            const user = userMap[t.userId] || {};
-            return {
-              _id: t.relatedId,
-              userId: t.userId,
-              name: user.name || "Unknown",
-              email: user.email || "N/A",
-              phone: user.phone || "N/A",
-              location: user.location || null,
-              type: "installation",
-              supportMessage: `Plan: ${t.plan}`,
-              status: "pending",
-              technicianAssigned: false,
-              isVirtual: true,
-            };
-          });
-
-        const merged = [...installationAsSupport, ...supportList];
-
-        merged.sort(
-          (a, b) =>
-            STATUS_ORDER[a.status || "pending"] -
-            STATUS_ORDER[b.status || "pending"]
-        );
-
-        setRequests(merged);
-
-        const statusMap = {};
-        const messageMap = {};
-        merged.forEach(req => {
-          statusMap[req._id] = req.status || "pending";
-          messageMap[req._id] = req.adminComments || "";
-        });
-
-        setStatusUpdates(statusMap);
-        setAdminMessages(messageMap);
-      } catch {
-        toast.error("Failed to load support requests");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadData();
   }, []);
 
@@ -136,17 +138,10 @@ const AdminSupportManager = () => {
         adminComments,
       });
 
-      if (!res.ok) throw new Error();
-
-      setRequests(prev =>
-        prev.map(r =>
-          r._id === req._id
-            ? { ...r, status: newStatus, adminComments }
-            : r
-        )
-      );
+      if (res.status !== 200) throw new Error();
 
       toast.success("Status updated");
+      await loadData();
     } catch {
       toast.error("Update failed");
     }
@@ -318,6 +313,7 @@ const AdminSupportManager = () => {
                           if (!res.ok) throw new Error();
 
                           toast.success("Installation marked complete");
+                          await loadData();
 
                           // optional UI refresh
                           setRequests(prev =>
