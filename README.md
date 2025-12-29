@@ -103,6 +103,8 @@ This project focuses on applying **system analysis concepts**, real-world workfl
 ---
 
 ## 📁 Project Structure
+
+```text
 CSE471_Project/
 │
 ├── client/              # Frontend (React)
@@ -117,17 +119,25 @@ CSE471_Project/
 │   ├── index.js
 │
 └── README.md
-###2️⃣ Run Backend
+
+
+2️⃣ Run Backend
 - cd server
 - npm install
 - npm run dev
-###3️⃣ Run Frontend
+
+  
+3️⃣ Run Frontend
 - cd client
 - npm install
 - npm run dev
-##🔑 Environment Variables (Server)
+
+  
+🔑 Environment Variables (Server)
+
 Create a .env file in the server folder:
--{DB_USER=your_mongodb_user
-  DB_PASSWORD=your_mongodb_password
-  JWT_SECRET=your_secret_key
-  PORT=5000}
+
+DB_USER=your_mongodb_user
+DB_PASSWORD=your_mongodb_password
+JWT_SECRET=your_secret_key
+PORT=5000
