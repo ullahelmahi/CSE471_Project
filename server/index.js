@@ -79,6 +79,12 @@ async function run() {
     const payments = db.collection("payments");
     const technicians = db.collection("technicians");
     const technicianAssignments = db.collection("technicianAssignments");
+    const serviceFeedbacks = db.collection("serviceFeedbacks");
+    // Ensure one feedback per service per user (DB-level safety)
+    await serviceFeedbacks.createIndex(
+      { supportRequestId: 1, userId: 1 },
+      { unique: true }
+    );
 
     /* ======================
        AUTH
@@ -496,7 +502,7 @@ async function run() {
       );
 
       const subscription = {
-        userId: String(userId), // ✅ FIX
+        userId: String(userId), 
         planId,
         planName,
         price,
@@ -510,7 +516,7 @@ async function run() {
 
     app.get("/subscriptions/:userId", async (req, res) => {
       const result = await subscriptions
-        .find({ userId: String(req.params.userId) }) // ✅ FIX
+        .find({ userId: String(req.params.userId) }) 
         .sort({ subscriptionDate: -1 })
         .toArray();
 
@@ -529,7 +535,7 @@ async function run() {
         bkashNumber,
         transactionId,
       } = req.body;
-      // 🔐 ALWAYS calculate price from DB (NEVER trust frontend)
+      // calculate price from DB
       const pkg = await packages.findOne({ planId });
 
       if (!pkg) {
@@ -598,7 +604,7 @@ async function run() {
           paymentMethod: "bkash-demo",
           paymentStatus: "paid",
           technicianAssigned: false,
-          isFirstTime: previousSubs === 0, // ✅ FIX
+          isFirstTime: previousSubs === 0, 
         });
       }
 
@@ -861,6 +867,109 @@ async function run() {
 
       res.send(tasks);
     });
+
+    /* ======================
+       service-feedback
+    ====================== */ 
+    app.post("/service-feedback", verifyJWT, async (req, res) => {
+      const {
+        supportRequestId,
+        technicianId,
+        satisfaction,
+        feedbackText,
+      } = req.body;
+
+      if (!supportRequestId || !technicianId || !satisfaction) {
+        return res.status(400).send({ message: "Missing fields" });
+      }
+
+      // Allow feedback ONLY after service is completed
+      const assignment = await technicianAssignments.findOne({
+        relatedId: new ObjectId(supportRequestId),
+        taskType: "service",
+        status: "completed",
+      });
+
+      if (!assignment) {
+        return res.status(403).send({
+          message: "Service not completed yet",
+        });
+      }
+
+      // 🔐 ENSURE the feedback is given by the SAME USER who requested the service
+      if (assignment.userId !== req.decoded.id) {
+        return res.status(403).send({
+          message: "You are not allowed to give feedback for this service",
+        });
+      }
+
+      const allowed = ["satisfied", "neutral", "not_satisfied"];
+      if (!allowed.includes(satisfaction)) {
+        return res.status(400).send({ message: "Invalid satisfaction value" });
+      }
+
+      // 🔒 ONE FEEDBACK PER SERVICE
+      const alreadyGiven = await serviceFeedbacks.findOne({
+        supportRequestId: new ObjectId(supportRequestId),
+        userId: req.decoded.id,
+      });
+
+      if (alreadyGiven) {
+        return res.status(409).send({ message: "Feedback already submitted" });
+      }
+
+      const technician = await technicians.findOne({
+        _id: new ObjectId(technicianId),
+      });
+
+      const user = await users.findOne({
+        _id: new ObjectId(req.decoded.id),
+      });
+
+      const feedbackDoc = {
+        userId: req.decoded.id,
+        userName: user?.name || "Unknown",
+        userLocation: user?.address || "N/A",
+
+        technicianId: technician._id,
+        technicianName: technician.name,
+
+        supportRequestId: new ObjectId(supportRequestId),
+
+        satisfaction,
+        feedbackText: feedbackText || "",
+        serviceCompletedAt: assignment.completedAt,
+
+        createdAt: new Date(),
+      };
+
+      await serviceFeedbacks.insertOne(feedbackDoc);
+
+      res.send({ success: true });
+    });
+
+    app.get("/service-feedback/check/:serviceId", verifyJWT, async (req, res) => {
+      const exists = await serviceFeedbacks.findOne({
+        supportRequestId: new ObjectId(req.params.serviceId),
+        userId: req.decoded.id,
+      });
+
+      res.send({ exists: !!exists });
+    });
+
+    app.get(
+      "/admin/service-feedback",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const result = await serviceFeedbacks
+          .find()
+          .sort({ createdAt: -1 })
+          .toArray();
+
+        res.send(result);
+      }
+    );
 
     /* ======================
        PAYMENTS(ADMIN)
