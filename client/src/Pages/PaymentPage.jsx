@@ -8,12 +8,7 @@ const PaymentPage = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [pkg, setPkg] = useState(null);
-  const [method, setMethod] = useState("");
-  const [bkashNumber, setBkashNumber] = useState("");
-  const [transactionId, setTransactionId] = useState("");
-  const [loading, setLoading] = useState(false);
-  const DEMO_BKASH_NUMBER = "01722-33322"; 
+
 
   // 🔹 Load selected plan
   useEffect(() => {
@@ -166,5 +161,6 @@ const PaymentPage = () => {
     </section>
   );
 };
+
 
 export default PaymentPage;
