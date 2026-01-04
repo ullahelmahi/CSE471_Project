@@ -5,6 +5,7 @@ import API from "../../services/api";
 import LocationPicker from "./LocationPicker";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import ExpandableMap from "../../components/ExpandableMap";
 
 const Support = () => {
   const { user } = useContext(AuthContext);
@@ -157,8 +158,14 @@ const Support = () => {
           />
           {type === "service" && (
             <div className="space-y-2">
-                <p className="font-semibold">Pin your location</p>
-                <LocationPicker setLocation={setLocation} />
+              <p className="font-semibold">Pin your location</p>
+
+              <ExpandableMap height="250px">
+                <LocationPicker
+                  position={location}
+                  setPosition={setLocation}
+                />
+              </ExpandableMap>
             </div>
           )}
           <button type="submit" className="btn btn-primary w-full">

@@ -495,7 +495,7 @@ async function run() {
         return res.status(400).send({ message: "Missing fields" });
       }
 
-      // 🔴 deactivate old plans
+      // deactivate old plans
       await subscriptions.updateMany(
         { userId: String(userId) },
         { $set: { status: "inactive" } }
